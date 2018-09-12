@@ -18,6 +18,7 @@
 
 package co.rsk.net.discovery.message;
 
+import co.rsk.net.discovery.PeerDiscoveryException;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.ethereum.crypto.ECKey;
 import org.ethereum.util.ByteUtil;
@@ -65,7 +66,7 @@ public class PingPeerMessage extends PeerDiscoveryMessage {
         byte[] data;
         byte[] tmpNetworkId = intToBytes(networkId);
         byte[] rlpNetworkID = RLP.encodeElement(stripLeadingZeroes(tmpNetworkId));
-            data = RLP.encodeList(rlpFromList, rlpToList, rlpCheck, rlpNetworkID);
+            data = RLP.encodeList(rlpNetworkID);
 
         PingPeerMessage message = new PingPeerMessage();
         message.encode(type, data, privKey);
@@ -81,8 +82,17 @@ public class PingPeerMessage extends PeerDiscoveryMessage {
     @Override
     public final void parse(byte[] data) {
         RLPList dataList = (RLPList) RLP.decode2OneItem(data, 0);
+
+        if (dataList.size() < 3) {
+            throw new PeerDiscoveryException("PingPeerMessage needs more data");
+        }
+
         RLPList fromList = (RLPList) dataList.get(1);
         RLPItem chk = (RLPItem) dataList.get(2);
+
+        if (fromList.size() < 2) {
+            throw new PeerDiscoveryException("PingPeerMessage needs more data");
+        }
 
         byte[] ipB = fromList.get(0).getRLPData();
 
